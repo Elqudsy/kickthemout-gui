@@ -6,42 +6,39 @@ import (
 	"os"
 )
 
-// Struct containing info relating to the users local network.
+//LocalNetwork - Struct containing info relating to the users local network.
 type LocalNetwork struct {
-	MyIPs         []string
-	MyMacs        map[string]string
-	MyHostName    string
-	AvailableIps  []string
-	AvailableMacs []string
-	TargetIps     []string
-}
-
-var db = loadOui("oui.txt")
-
-//Get available local ips on the users network.
-func GetAvailableIps() {
-	fmt.Println("sdfsfds")
+	MyIPs              []string
+	MyMacs             map[string]string
+	MyHostName         string
+	AvailableIps       []string
+	AvailableHostNames []string
+	AvailableMacs      []string
+	TargetIps          []string
 }
 
 //Get Mac adresses and vendor info (uses oui database from a text file)
-func getMacAddrs() []string {
-	var macs []string
+func getMacAddrs() map[string]string {
+	macs := make(map[string]string)
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		os.Exit(1)
 	}
 
 	for _, ifs := range interfaces {
-		a := ifs.HardwareAddr.String()
-		if a != "" {
-			macs = append(macs, a)
+		mac := ifs.HardwareAddr.String()
+		if mac != "" {
+			fmt.Println(mac)
+			v, _ := db.VendorLookup(mac)
+			//If vendor can't be found it returns "" which is fine for our case.
+			macs[mac] = v
 		}
 	}
 	return macs
 }
 
-//Returns a default LocalNetwork struct with your local ips, mac address and hostname of the machine
-//the program is being run on.
+//DefaultLocalNetwork - Returns a default LocalNetwork struct with your local ips, mac addresses and hostnames of the machines
+//in your local network.
 func DefaultLocalNetwork() *LocalNetwork {
 	var (
 		myIPs      []string
@@ -66,7 +63,7 @@ func DefaultLocalNetwork() *LocalNetwork {
 
 	return &LocalNetwork{
 		MyIPs:      myIPs,
-		MyMacs:     getMacAddr(),
+		MyMacs:     getMacAddrs(),
 		MyHostName: myHostName,
 	}
 }
