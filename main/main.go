@@ -14,7 +14,6 @@ import (
 	"github.com/zserge/webview"
 )
 
-//If setuperr is true just show user 
 func startServer(setupResp bool) string {
 	//Listen on localhost as this is how our ui is going to be sent to the webview.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
