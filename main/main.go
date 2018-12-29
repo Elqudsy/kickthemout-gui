@@ -8,21 +8,22 @@ import (
 	"mime"
 	"net"
 	"net/http"
-	"os"
 	"path/filepath"
-	"runtime"
 
-	kto "github.com/cantasaurus/kickthemout"
+	kto "github.com/cantasaurus/kickthemout-gui"
 	"github.com/zserge/webview"
 )
 
-func startServer() string {
+//If setuperr is true just show user 
+func startServer(setupResp bool) string {
 	//Listen on localhost as this is how our ui is going to be sent to the webview.
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	//Goroutine with only 1 http handler as that's all that's going to be used. If there
+	//was an error during setup simply serve the error page instead.
 	go func() {
 		defer ln.Close()
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -30,8 +31,10 @@ func startServer() string {
 			if len(path) > 0 && path[0] == '/' {
 				path = path[1:]
 			}
-			if path == "" {
+			if path == "" && setupResp == true {
 				path = "gui/index.html"
+			} else if path == "" && setupResp == false {
+				path = "gui/error.html"
 			}
 			if bs, err := Asset(path); err != nil {
 				w.WriteHeader(http.StatusNotFound)
@@ -42,16 +45,26 @@ func startServer() string {
 		})
 		log.Fatal(http.Serve(ln, nil))
 	}()
+
 	return "http://" + ln.Addr().String()
 }
 
+func startWebView() webview.WebView{
+	response, _ := kto.CheckAll()
+	fmt.Println("Response: ", response)
+	//If response is true a different html page is served prompting the user to either install nmap or run the program as root. 
+	url := startServer(response)
+	w := webview.New(webview.Settings{
+		Title:     "Kick Them Out",
+		URL:       url,
+		Width:     600,
+		Height:    600,
+		Resizable: true,
+	})
+	return w
+}
+
 func main() {
-	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-		if os.Geteuid() != 0 {
-			fmt.Println("Program must be run as root. Please rerun the program as the root user or using sudo.")
-			os.Exit(1)
-		}
-	}
 	localNet := kto.DefaultLocalNetwork()
 
 	for i, elem := range localNet.MyIPs {
@@ -66,17 +79,10 @@ func main() {
 		fmt.Println("k:", k, "v:", v)
 	}
 
-	output := kto.NmapCall("10.0.0.*")
+	output := kto.NmapLocalNetScan("10.0.0.*")
 	fmt.Println(output)
 
-	url := startServer()
-	w := webview.New(webview.Settings{
-		Title:     "Asset Test",
-		URL:       url,
-		Width:     600,
-		Height:    600,
-		Resizable: true,
-	})
+	w := startWebView()
 	defer w.Exit()
 	w.Run()
 }

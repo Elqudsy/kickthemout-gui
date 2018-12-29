@@ -2,3 +2,5 @@ go-bindata
 oui.txt
 main
 .DS_STORE
+main.exe
+go-bindata.exe

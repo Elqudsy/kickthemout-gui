@@ -18,23 +18,10 @@ type LocalNetwork struct {
 }
 
 //Get Mac adresses and vendor info (uses oui database from a text file)
-func getMacAddrs() map[string]string {
-	macs := make(map[string]string)
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		os.Exit(1)
+func getMacAddrs(nmapStr string) map[string]string {
+	return map[string]string{
+		"hello": "goodbye",
 	}
-
-	for _, ifs := range interfaces {
-		mac := ifs.HardwareAddr.String()
-		if mac != "" {
-			fmt.Println(mac)
-			v, _ := db.VendorLookup(mac)
-			//If vendor can't be found it returns "" which is fine for our case.
-			macs[mac] = v
-		}
-	}
-	return macs
 }
 
 //DefaultLocalNetwork - Returns a default LocalNetwork struct with your local ips, mac addresses and hostnames of the machines
@@ -63,7 +50,7 @@ func DefaultLocalNetwork() *LocalNetwork {
 
 	return &LocalNetwork{
 		MyIPs:      myIPs,
-		MyMacs:     getMacAddrs(),
+		MyMacs:     getMacAddrs("sdfsdfsdfsdfsdf"),
 		MyHostName: myHostName,
 	}
 }
